@@ -11,128 +11,277 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #E6F0FA; }
-[data-testid="stSidebar"] { background-color: #0D1B2A !important; }
-[data-testid="stSidebar"] * { color: #FFFFFF !important; }
-[data-testid="stSidebar"] small { color: #A7F3D0 !important; }
-.card-header { font-size: 12px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; border-bottom: 2px solid #E6F0FA; padding-bottom: 8px; }
-.result-corta { background: linear-gradient(135deg, #A7F3D0 0%, #E6F0FA 100%); border-left: 6px solid #0EA5A4; border-radius: 14px; padding: 28px; }
-.result-media { background: linear-gradient(135deg, #FEF9C3 0%, #E6F0FA 100%); border-left: 6px solid #F59E0B; border-radius: 14px; padding: 28px; }
-.result-larga { background: linear-gradient(135deg, #FEE2E2 0%, #E6F0FA 100%); border-left: 6px solid #EF4444; border-radius: 14px; padding: 28px; }
-.result-title { font-size: 26px; font-weight: 700; color: #0D1B2A; margin-bottom: 4px; }
-.result-subtitle { font-size: 14px; color: #334155; margin-bottom: 12px; }
-.disclaimer { background: #F1F5F9; border-left: 4px solid #1E3A8A; border-radius: 8px; padding: 14px 18px; font-size: 12px; color: #334155; margin-top: 20px; line-height: 1.7; }
-.ref-card { border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; font-size: 13px; line-height: 1.5; }
-.ref-corta { background: #A7F3D0; border-left: 4px solid #0EA5A4; }
-.ref-media { background: #FEF9C3; border-left: 4px solid #F59E0B; }
-.ref-larga { background: #FEE2E2; border-left: 4px solid #EF4444; }
-.stButton > button { background-color: #1E3A8A !important; color: white !important; border-radius: 10px !important; padding: 12px 32px !important; font-size: 15px !important; font-weight: 600 !important; border: none !important; width: 100%; }
-h1 { color: #0D1B2A !important; font-weight: 700 !important; font-size: 28px !important; }
-h2 { color: #1E3A8A !important; font-weight: 600 !important; font-size: 20px !important; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+html, body, [class*="css"], .stApp {
+    font-family: 'DM Sans', sans-serif !important;
+    background-color: #F8FAFC !important;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #0D1B2A !important;
+    border-right: 1px solid #1A2B3C;
+}
+[data-testid="stSidebar"] * { color: #E2E8F0 !important; }
+
+/* Main */
+.block-container { padding: 2rem 2.5rem !important; max-width: 1400px !important; }
+
+/* Section labels */
+.section-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: #1E3A8A;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+/* Selectbox labels */
+.stSelectbox label {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #64748B !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+}
+
+/* Submit button */
+.stFormSubmitButton > button {
+    background-color: #0D1B2A !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 14px 40px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+    width: 100% !important;
+}
+.stFormSubmitButton > button:hover {
+    background-color: #1E3A8A !important;
+}
+
+/* Result cards */
+.result-card {
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+}
+.result-corta {
+    background: #F0FDFA;
+    border: 1px solid #0EA5A4;
+    border-left: 5px solid #0EA5A4;
+}
+.result-media {
+    background: #FEFCE8;
+    border: 1px solid #EAB308;
+    border-left: 5px solid #EAB308;
+}
+.result-larga {
+    background: #FFF1F2;
+    border: 1px solid #F43F5E;
+    border-left: 5px solid #F43F5E;
+}
+.result-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+}
+.label-corta { color: #0EA5A4; }
+.label-media { color: #CA8A04; }
+.label-larga { color: #E11D48; }
+.result-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0D1B2A;
+    margin-bottom: 2px;
+    line-height: 1.1;
+}
+.result-days {
+    font-size: 13px;
+    color: #64748B;
+    margin-bottom: 12px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+}
+.result-desc {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.65;
+}
+
+/* Disclaimer */
+.disclaimer {
+    background: #F8FAFC;
+    border-left: 3px solid #1E3A8A;
+    border-radius: 6px;
+    padding: 16px 20px;
+    font-size: 11.5px;
+    color: #64748B;
+    line-height: 1.75;
+    margin-top: 24px;
+}
+.disclaimer b { color: #0D1B2A; }
+
+/* Ref items sidebar */
+.ref-item {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-left: 3px solid;
+}
+.ref-corta { background: rgba(14,165,164,0.1); border-color: #0EA5A4; }
+.ref-media  { background: rgba(234,179,8,0.1);  border-color: #EAB308; }
+.ref-larga  { background: rgba(244,63,94,0.1);  border-color: #F43F5E; }
+.ref-item b { color: #F1F5F9 !important; font-size: 12px; }
+.ref-item small { color: #94A3B8 !important; font-size: 11px; }
+
+/* Divider */
+hr { border-color: #E2E8F0 !important; margin: 20px 0 !important; }
 </style>
 """, unsafe_allow_html=True)
+
 
 # ── Carga del modelo ──────────────────────────────────────────
 @st.cache_resource
 def cargar_modelo():
     from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
-    return joblib.load("models/modelo_final_pipeline.pkl")
+    return joblib.load("modelo_final_pipeline.pkl")
 
 try:
     artefacto = cargar_modelo()
     pipeline  = artefacto["pipeline"]
     opciones  = artefacto["opciones"]
+    for col in ["APR DRG Code", "APR MDC Code"]:
+        try:
+            opciones[col] = sorted(opciones[col], key=lambda x: int(x))
+        except:
+            opciones[col] = sorted(opciones[col])
     modelo_ok = True
 except Exception as e:
     modelo_ok = False
     st.error(f"Error al cargar el modelo: {e}")
 
+
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style="padding:8px 0 16px 0;">
-        <span style="font-size:18px;font-weight:700;">Sistema de Apoyo Clínico</span><br>
-        <span style="font-size:13px;color:#A7F3D0;">Predicción de Estadía Hospitalaria</span>
+    <div style="padding:28px 20px 20px;">
+        <div style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">
+            Sistema de Apoyo Clínico
+        </div>
+        <div style="font-size:16px;font-weight:700;color:#FFFFFF;line-height:1.3;">
+            Predicción de Estadía Hospitalaria
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #1E3A8A;"></div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("---")
+
     st.markdown("""
-    <div style="font-size:13px;line-height:1.8;">
-        <b>Instrucciones</b><br>
-        1. Complete todos los campos<br>
-        2. Presione <b>Predecir</b><br>
-        3. Revise el resultado y el aviso legal
+    <div style="padding:0 20px 20px;">
+        <div style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;">
+            Instrucciones
+        </div>
+        <div style="font-size:12px;color:#94A3B8;line-height:2.1;">
+            1. Complete todos los campos<br>
+            2. Presione <span style="color:#0EA5A4;font-weight:600;">Predecir</span><br>
+            3. Revise el resultado y el aviso legal
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #1E3A8A;"></div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown("<div style='font-size:13px;'><b>Referencia de categorías</b></div>",
-                unsafe_allow_html=True)
+
     st.markdown("""
-    <div class="ref-card ref-corta">
-        <b>Estadía Corta</b> — 1 a 3 días<br>
-        <small>Procedimientos rutinarios o condiciones manejables</small>
-    </div>
-    <div class="ref-card ref-media">
-        <b>Estadía Media</b> — 4 a 7 días<br>
-        <small>Tratamientos moderados con seguimiento activo</small>
-    </div>
-    <div class="ref-card ref-larga">
-        <b>Estadía Larga</b> — 8 días o más<br>
-        <small>Casos complejos o con riesgo de complicaciones</small>
+    <div style="padding:0 20px 20px;">
+        <div style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px;">
+            Categorías de estadía
+        </div>
+        <div class="ref-item ref-corta">
+            <b>Estadía Corta — 1 a 3 días</b><br>
+            <small>Procedimientos rutinarios o condiciones manejables</small>
+        </div>
+        <div class="ref-item ref-media">
+            <b>Estadía Media — 4 a 7 días</b><br>
+            <small>Tratamientos con seguimiento clínico activo</small>
+        </div>
+        <div class="ref-item ref-larga">
+            <b>Estadía Larga — 8 días o más</b><br>
+            <small>Casos complejos o con riesgo de complicaciones</small>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #1E3A8A;"></div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("---")
-    st.markdown("<small style='color:#A7F3D0;'>v1.0.0 · SVM · SPARCS NY 2015</small>",
-                unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="padding:0 20px;">
+        <div style="font-size:10px;color:#334155;">
+            v1.0.0 &nbsp;·&nbsp; SVM &nbsp;·&nbsp; SPARCS NY 2015
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 # ── Header ────────────────────────────────────────────────────
 st.markdown("""
-<h1>Predictor de Duración de Estadía Hospitalaria</h1>
-<p style="color:#334155;font-size:14px;margin-top:4px;">
-    Herramienta de apoyo a la planificación de recursos hospitalarios.
-    Complete los datos clínicos del paciente para obtener una estimación de la duración de la estadía.
-</p>
+<div style="margin-bottom:28px;">
+    <div style="font-size:10px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">
+        Minería de Datos · Universidad Pontificia Bolivariana
+    </div>
+    <div style="font-size:24px;font-weight:700;color:#0D1B2A;line-height:1.2;">
+        Predictor de Duración de Estadía Hospitalaria
+    </div>
+    <div style="font-size:13px;color:#64748B;margin-top:6px;">
+        Herramienta de apoyo a la planificación de recursos · SPARCS New York State 2015
+    </div>
+    <div style="margin-top:16px;border-bottom:1px solid #E2E8F0;"></div>
+</div>
 """, unsafe_allow_html=True)
-st.markdown("---")
+
 
 # ── Formulario ────────────────────────────────────────────────
-st.markdown("<h2>Datos del Paciente</h2>", unsafe_allow_html=True)
+st.markdown('<div class="section-title">Datos del Paciente</div>', unsafe_allow_html=True)
 
-with st.form("formulario"):
-    col1, col2, col3 = st.columns(3)
+with st.form("formulario_prediccion"):
+    col1, col2, col3 = st.columns(3, gap="large")
 
     with col1:
-        st.markdown("<div class='card-header'>Información General</div>",
-                    unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Información General</div>', unsafe_allow_html=True)
         age_group     = st.selectbox("Grupo de edad",
-                            opciones["Age Group"])
+                            sorted(opciones["Age Group"]) if modelo_ok else [])
         tipo_admision = st.selectbox("Tipo de admisión",
-                            opciones["Type of Admission"])
+                            sorted(opciones["Type of Admission"]) if modelo_ok else [])
         pago          = st.selectbox("Tipo de pago principal",
-                            opciones["Payment Typology 1"])
+                            sorted(opciones["Payment Typology 1"]) if modelo_ok else [])
 
     with col2:
-        st.markdown("<div class='card-header'>Clasificación Clínica</div>",
-                    unsafe_allow_html=True)
-        sev_raw  = st.selectbox("Severidad de la enfermedad (APR SOI)",
-                        opciones["APR Severity of Illness Code"])
-        mor_raw  = st.selectbox("Riesgo de mortalidad (APR ROM)",
-                        opciones["APR Risk of Mortality"])
-        apr_mdc  = st.selectbox("Categoría diagnóstica mayor (APR MDC)",
-                        opciones["APR MDC Code"])
-        apr_drg  = st.selectbox("Grupo diagnóstico APR-DRG",
-                        opciones["APR DRG Code"])
+        st.markdown('<div class="section-title">Clasificación Clínica</div>', unsafe_allow_html=True)
+        sev_raw = st.selectbox("Severidad (APR SOI)",
+                        sorted(opciones["APR Severity of Illness Code"], key=int) if modelo_ok else [])
+        mor_raw = st.selectbox("Riesgo de mortalidad (APR ROM)",
+                        opciones["APR Risk of Mortality"] if modelo_ok else [])
+        apr_mdc = st.selectbox("Categoría diagnóstica mayor (APR MDC)",
+                        opciones["APR MDC Code"] if modelo_ok else [])
+        apr_drg = st.selectbox("Grupo diagnóstico APR-DRG",
+                        opciones["APR DRG Code"] if modelo_ok else [])
 
     with col3:
-        st.markdown("<div class='card-header'>Diagnóstico y Procedimiento</div>",
-                    unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Diagnóstico y Procedimiento</div>', unsafe_allow_html=True)
         dx_grupo = st.selectbox("Grupo diagnóstico CCS",
-                        opciones["CCS_DX_Grupo"])
+                        sorted(opciones["CCS_DX_Grupo"]) if modelo_ok else [])
         pr_grupo = st.selectbox("Grupo procedimiento CCS",
-                        opciones["CCS_PR_Grupo"])
+                        sorted(opciones["CCS_PR_Grupo"]) if modelo_ok else [])
 
+    st.markdown("<br>", unsafe_allow_html=True)
     submitted = st.form_submit_button("Predecir Duración de Estadía")
+
 
 # ── Resultado ─────────────────────────────────────────────────
 if submitted and modelo_ok:
@@ -154,69 +303,83 @@ if submitted and modelo_ok:
     try:
         prediccion = pipeline.predict(input_data)[0]
 
-        st.markdown("---")
-        st.markdown("<h2>Resultado de la Predicción</h2>", unsafe_allow_html=True)
-        col_res, col_info = st.columns([1, 1])
+        st.markdown('<div class="section-title" style="margin-top:12px;">Resultado</div>',
+                    unsafe_allow_html=True)
+
+        col_res, col_info = st.columns([1.2, 0.8], gap="large")
 
         with col_res:
             if prediccion == "Corta":
                 st.markdown("""
-                <div class="result-corta">
+                <div class="result-card result-corta">
+                    <div class="result-label label-corta">Resultado</div>
                     <div class="result-title">Estadía Corta</div>
-                    <div class="result-subtitle">Estimación: <b>1 a 3 días</b></div>
-                    <p style="font-size:14px;color:#334155;">
-                        El modelo estima una hospitalización de corta duración, asociada
-                        a procedimientos rutinarios o condiciones clínicamente manejables.
-                    </p>
+                    <div class="result-days">1 a 3 días estimados</div>
+                    <div class="result-desc">
+                        El modelo estima una hospitalización de corta duración,
+                        asociada a procedimientos rutinarios o condiciones
+                        clínicamente manejables con protocolo de alta definido.
+                    </div>
                 </div>""", unsafe_allow_html=True)
+
             elif prediccion == "Media":
                 st.markdown("""
-                <div class="result-media">
+                <div class="result-card result-media">
+                    <div class="result-label label-media">Resultado</div>
                     <div class="result-title">Estadía Media</div>
-                    <div class="result-subtitle">Estimación: <b>4 a 7 días</b></div>
-                    <p style="font-size:14px;color:#334155;">
-                        El modelo estima una hospitalización de duración moderada, con
-                        tratamientos que requieren seguimiento clínico activo.
-                    </p>
+                    <div class="result-days">4 a 7 días estimados</div>
+                    <div class="result-desc">
+                        El modelo estima una hospitalización de duración moderada.
+                        El paciente requiere seguimiento clínico activo y evaluación
+                        periódica antes del alta.
+                    </div>
                 </div>""", unsafe_allow_html=True)
+
             else:
                 st.markdown("""
-                <div class="result-larga">
+                <div class="result-card result-larga">
+                    <div class="result-label label-larga">Resultado</div>
                     <div class="result-title">Estadía Larga</div>
-                    <div class="result-subtitle">Estimación: <b>8 días o más</b></div>
-                    <p style="font-size:14px;color:#334155;">
-                        El modelo estima una hospitalización prolongada, asociada a casos
-                        de alta complejidad clínica o riesgo de complicaciones.
-                    </p>
+                    <div class="result-days">8 días o más estimados</div>
+                    <div class="result-desc">
+                        El modelo estima una hospitalización prolongada, asociada
+                        a alta complejidad clínica, riesgo de complicaciones o
+                        necesidad de intervenciones múltiples.
+                    </div>
                 </div>""", unsafe_allow_html=True)
 
         with col_info:
-            st.markdown("<h3 style='font-size:15px;color:#334155;'>Resumen de entrada</h3>",
+            st.markdown('<div class="section-title">Resumen de entrada</div>',
                         unsafe_allow_html=True)
-            st.dataframe(pd.DataFrame({
-                "Variable": ["Edad","Admisión","Severidad","Mortalidad",
-                             "Diagnóstico CCS","Procedimiento CCS",
-                             "APR MDC","APR DRG","Pago"],
-                "Valor":    [age_group, tipo_admision, sev_raw, mor_raw,
-                             dx_grupo, pr_grupo, apr_mdc, apr_drg, pago]
-            }), hide_index=True, use_container_width=True)
+            st.dataframe(
+                pd.DataFrame({
+                    "Variable": ["Edad", "Admisión", "Severidad", "Mortalidad",
+                                 "Diagnóstico CCS", "Procedimiento CCS",
+                                 "APR MDC", "APR DRG", "Pago"],
+                    "Valor":    [age_group, tipo_admision, sev_raw, mor_raw,
+                                 dx_grupo, pr_grupo, apr_mdc, apr_drg, pago]
+                }),
+                hide_index=True,
+                use_container_width=True,
+                height=340
+            )
 
         st.markdown("""
         <div class="disclaimer">
             <b>Aviso importante sobre el uso de esta herramienta</b><br><br>
-            Este sistema utiliza un modelo de clasificación supervisada (Support Vector Machine)
+            Este sistema utiliza un modelo de clasificación supervisada (<b>Support Vector Machine</b>)
             entrenado con datos históricos del sistema SPARCS del Estado de Nueva York (2015),
             con un <b>F1-macro de 0.59</b> sobre datos de prueba independientes.<br><br>
-            El <b>F1-macro</b> mide el balance entre precisión y recall promediado entre las
-            tres categorías de estadía (Corta, Media, Larga), otorgando igual peso a cada clase.
+            El <b>F1-macro</b> mide el balance entre precisión y recall promediado entre las tres
+            categorías de estadía (Corta, Media, Larga), otorgando igual peso a cada clase.
             Un valor de 0.59 indica capacidad de clasificación moderada — el modelo clasifica
-            correctamente aproximadamente 6 de cada 10 casos por categoría.<br><br>
+            correctamente aproximadamente <b>6 de cada 10 casos</b> por categoría.<br><br>
             <b>Esta predicción es únicamente una herramienta de apoyo a la planificación
             administrativa y NO reemplaza el criterio clínico del personal médico.</b>
             Las decisiones sobre hospitalización, tratamiento y alta deben tomarse exclusivamente
-            por profesionales de la salud habilitados, considerando la condición individual
-            del paciente. Los desarrolladores y la institución no asumen responsabilidad
-            por decisiones clínicas basadas en el resultado de este sistema.
+            por profesionales de la salud habilitados, considerando la condición individual del
+            paciente. Los desarrolladores y la institución no asumen responsabilidad por
+            decisiones clínicas basadas en este sistema.
         </div>
         """, unsafe_allow_html=True)
 
