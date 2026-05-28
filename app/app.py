@@ -37,7 +37,7 @@ h2 { color: #1E3A8A !important; font-weight: 600 !important; font-size: 20px !im
 @st.cache_resource
 def cargar_modelo():
     from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
-    return joblib.load("modelo_final_pipeline.pkl")
+    return joblib.load("models/modelo_final_pipeline.pkl")
 
 try:
     artefacto = cargar_modelo()
