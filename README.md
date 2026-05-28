@@ -1,48 +1,66 @@
-# Proyecto Final - Minería de Datos
+# Proyecto Final - Minería de Datos: Predicción de Estancia Hospitalaria (SPARCS)
 
-Descripción
------------
-Repositorio del proyecto final de Minería de Datos: preparación de datos, ingeniería de características, entrenamiento de modelos y una aplicación de demostración en Streamlit para predecir la duración de la estadía hospitalaria.
+## Descripción
+Este repositorio contiene el desarrollo del proyecto final de Minería de Datos enfocado en la predicción de la duración de la estadía hospitalaria utilizando el dataset **SPARCS 2015 (Statewide Planning and Research Cooperative System)** del Departamento de Salud del Estado de Nueva York. 
 
-Estructura del repositorio
---------------------------
-- `app/` - Código de la aplicación y transformadores. Contiene `app.py` (generador de la app Streamlit) y `transformadores.py` con clases de preprocesamiento (LimpiezaInicial, ImputacionNulos, AgrupacionCCS).
-- `data/raw/` - Datos originales y documentación del dataset.
-- `data/processed/` - Datos procesados listos para modelado (ej. `muestra_sparcs_10000.csv`).
-- `models/` - Artefactos de modelos y pipelines entrenados (colocar `modelo_final_pipeline.pkl` aquí o en la raíz según la configuración).
-- `notebooks/` - Notebooks de exploración y experimentación (`PreparacionDatos.ipynb`, `Modelos.ipynb`).
-- `requirements.txt` - Dependencias del proyecto.
+Siguiendo la metodología **CRISP-DM**, el proyecto abarca desde el entendimiento del negocio, la limpieza profunda y el tratamiento del desbalanceo categórico mediante `SMOTEN`, hasta el entrenamiento, optimización y puesta en producción de modelos predictivos mediante una aplicación web interactiva en **Streamlit**.
 
-Requisitos
-----------
-Instalar dependencias (recomendado en un entorno virtual):
+---
+
+## Estructura del Repositorio
+- `app/` - Código de la aplicación productiva. Contiene `app.py` (interfaz en Streamlit) y los scripts de soporte.
+- `data/raw/` - Datos originales y documentación del dataset de salud.
+- `data/processed/` - Matriz de datos procesados tras ingeniería de características y dummies.
+- `models/` - Contiene `artefacto_final.pkl`, el archivo binario unificado que encapsula el pipeline de preprocesamiento, la codificación *One-Hot Encoding* y el estimador optimizado.
+- `notebooks/` - Notebooks y scripts de experimentación y entrenamiento (`PreparacionDatos.ipynb`, `modelos (1).py`).
+- `requirements.txt` - Lista de dependencias del proyecto.
+
+---
+
+## El Modelo Predictivo y Soporte Estadístico
+
+A través de un riguroso análisis estadístico mediante pruebas de Shapiro-Wilk, Levene y un **ANOVA de un factor complementado con la prueba post-hoc de Tukey HSD**, se determinó de manera concluyente que la Regresión Logística (LR), la Support Vector Machine (SVM) y el Random Forest (RF) forman el conjunto de modelos con el rendimiento más alto y estadísticamente indistinguibles entre sí para este conjunto de datos ($7,696 \times 382$ registros en entrenamiento).
+
+### Selección Final: SVM (Support Vector Machine)
+Se seleccionó la **SVM** refinada mediante búsqueda de hiperparámetros debido a que obtuvo el mayor **F1-Score** en validación cruzada. En el contexto de la gestión hospitalaria de SPARCS, aunque la diferencia numérica con respecto a LR o RF sea menor al 2%, predecir correctamente hospitalizaciones prolongadas adicionales permite una planificación presupuestal óptima y mitiga el riesgo financiero derivado de la saturación de camas y recursos médicos.
+
+### Nota sobre el Tiempo Computacional
+El proceso de optimización de hiperparámetros requirió un uso intensivo de la CPU virtual en Google Colab (`n_jobs=-1`). Mientras que las búsquedas por grilla (`GridSearchCV`) de LR y RF tomaron el tiempo estándar, **la optimización bayesiana (`BayesSearchCV`) aplicada sobre la SVM demandó aproximadamente 30 minutos continuos de ejecución** debido a su naturaleza intrínsecamente secuencial, quedando registrado como la principal lección aprendida sobre costo-beneficio de cómputo en el proyecto.
+
+---
+
+## Mitigación de Fuga de Información (*Data Leakage*)
+Para garantizar la aplicabilidad real del modelo en el momento del ingreso del paciente, se excluyeron categóricamente variables que se generan únicamente al momento del egreso hospitalario (como `Total Charges`, `Total Costs` y `Patient Disposition`). Su inclusión habría provocado un modelo artificialmente perfecto en el entrenamiento, pero completamente inútil en el entorno de admisión real.
+
+---
+
+## Requisitos
+Instalar las dependencias del ecosistema de Machine Learning y la interfaz web (se recomienda usar un entorno virtual):
 
 ```bash
 python -m pip install -r requirements.txt
-```
+Las librerías core del proyecto incluyen: scikit-learn, imbalanced-learn (para el algoritmo SMOTEN), scikit-optimize y streamlit.
 
-Uso
----
-1. Colocar el artefacto `modelo_final_pipeline.pkl` en la raíz del proyecto o en la ruta esperada por la aplicación.
-2. Ejecutar la aplicación Streamlit localmente:
+Uso y Despliegue de la Aplicación
+1. Preparación del Artefacto
+Asegúrese de que el archivo binario exportado artefacto_final.pkl se encuentre en la carpeta models/ o en la raíz del proyecto según lo mapeado en el script. Este artefacto es cargado en memoria de forma eficiente una sola vez al inicializar la aplicación.
 
-```bash
+2. Ejecutar la Aplicación Streamlit
+Para levantar la plataforma interactiva localmente ejecute:
+
+Bash
 streamlit run app/app.py
-```
-
-Otras pruebas y scripts
------------------------
-- `app/transformadores.py` contiene transformadores personalizados usados en el pipeline (limpieza, imputación y agrupación de códigos CCS).
-- Los notebooks en `notebooks/` muestran la preparación de datos y el entrenamiento de modelos.
+3. Funcionamiento de la Interfaz
+La aplicación desplegará un formulario web interactivo donde el personal hospitalario introduce los datos de admisión del paciente a través de menús desplegables dinámicos (st.selectbox). Al accionar el botón de predicción, el sistema evalúa los datos a través del pipeline en tiempo real y retorna inmediatamente la categoría de estancia estimada (Corta, Media o Larga) con un tiempo de respuesta de inferencia inferior a los 200 milisegundos.
 
 Autores
--------
-Rafael Gutiérrez, Sara Rúa y Valentina Leal fuimos los creadores de este proyecto.
+Este proyecto fue diseñado, desarrollado e implementado por:
+
+Rafael Gutiérrez
+
+Sara Rúa
+
+Valentina Leal
 
 Licencia
---------
-El repositorio no especifica una licencia; añada un archivo `LICENSE` si desea aclarar términos de uso.
-
-Contacto
--------
-Para preguntas o colaboración, abrir un issue en este repositorio o contactar a los autores.
+Este repositorio se distribuye con fines académicos. Para uso institucional o clínico del pipeline de SPARCS, por favor consulte a los autores.
