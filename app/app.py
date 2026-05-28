@@ -1,7 +1,14 @@
 import streamlit as st
 import joblib
 import pandas as pd
-import os
+from pathlib import Path
+import sys
+import traceback
+from sklearn.preprocessing import OneHotEncoder
+
+# ============================================================
+# CONFIGURACIÓN GENERAL
+# ============================================================
 
 st.set_page_config(
     page_title="Predictor de Estadía Hospitalaria",
@@ -144,64 +151,153 @@ html, body, [class*="css"], .stApp {
 .ref-item b { color: #F1F5F9 !important; font-size: 12px; }
 .ref-item small { color: #94A3B8 !important; font-size: 11px; }
 
-/* Divider */
 hr { border-color: #E2E8F0 !important; margin: 20px 0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ── Carga del modelo ──────────────────────────────────────────
-from pathlib import Path
-import joblib
-import streamlit as st
+# ============================================================
+# CARGA DEL MODELO
+# ============================================================
+
+VARIABLES_MODELO_DEFAULT = [
+    "Age Group",
+    "Type of Admission",
+    "APR DRG Code",
+    "APR MDC Code",
+    "APR Severity of Illness Code",
+    "APR Risk of Mortality",
+    "Payment Typology 1",
+    "CCS_DX_Grupo",
+    "CCS_PR_Grupo"
+]
+
+OPCIONES_FALLBACK = {
+    "Age Group": ["0 to 17", "18 to 29", "30 to 49", "50 to 69", "70 or Older"],
+    "Type of Admission": ["Elective", "Emergency", "Newborn", "Not Available", "Trauma", "Urgent"],
+    "APR DRG Code": ["1"],
+    "APR MDC Code": ["1"],
+    "APR Severity of Illness Code": ["1", "2", "3", "4"],
+    "APR Risk of Mortality": ["Minor", "Moderate", "Major", "Extreme"],
+    "Payment Typology 1": ["Medicare", "Medicaid", "Private Health Insurance", "Self-Pay"],
+    "CCS_DX_Grupo": ["Otros"],
+    "CCS_PR_Grupo": ["Otros"]
+}
+
+
+def registrar_transformadores_si_existen():
+    """
+    Esto ayuda si el .pkl fue guardado con clases personalizadas.
+    Si no existe transformadores.py o no se necesitan, no rompe la app.
+    """
+    try:
+        from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
+
+        sys.modules["__main__"].LimpiezaInicial = LimpiezaInicial
+        sys.modules["__main__"].ImputacionNulos = ImputacionNulos
+        sys.modules["__main__"].AgrupacionCCS = AgrupacionCCS
+
+    except Exception:
+        pass
+
+
+def buscar_onehot_en_pipeline(pipeline):
+    """
+    Busca el OneHotEncoder dentro del pipeline sin depender
+    de que el paso se llame exactamente 'onehot'.
+    """
+    if hasattr(pipeline, "named_steps"):
+        for _, paso in pipeline.named_steps.items():
+            if isinstance(paso, OneHotEncoder):
+                return paso
+
+    if hasattr(pipeline, "steps"):
+        for _, paso in pipeline.steps:
+            if isinstance(paso, OneHotEncoder):
+                return paso
+
+    return None
+
+
+def opciones_desde_pipeline(pipeline, variables_modelo):
+    """
+    Construye las opciones de los selectbox desde el OneHotEncoder entrenado.
+    """
+    onehot = buscar_onehot_en_pipeline(pipeline)
+
+    if onehot is None:
+        raise ValueError("No se encontró un OneHotEncoder dentro del pipeline.")
+
+    opciones = {}
+
+    for variable, categorias in zip(variables_modelo, onehot.categories_):
+        opciones[variable] = [str(x) for x in categorias]
+
+    return opciones
+
 
 @st.cache_resource
 def cargar_modelo():
+    registrar_transformadores_si_existen()
+
     BASE_DIR = Path(__file__).resolve().parent
     ROOT_DIR = BASE_DIR.parent
     MODEL_PATH = ROOT_DIR / "models" / "modelo_final_pipeline.pkl"
 
-    artefacto = joblib.load(MODEL_PATH)
-    return artefacto
-    try:
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"No se encontró el modelo en: {MODEL_PATH}")
+
+    return joblib.load(MODEL_PATH)
+
+
+modelo_ok = False
+pipeline = None
+artefacto = None
+clases = []
+variables_modelo = VARIABLES_MODELO_DEFAULT.copy()
+opciones = OPCIONES_FALLBACK.copy()
+error_modelo = None
+
+try:
     artefacto = cargar_modelo()
 
-    pipeline = artefacto["pipeline"]
-    variables_modelo = artefacto["variables_modelo"]
-    clases = artefacto["clases"]
+    if isinstance(artefacto, dict):
+        pipeline = artefacto.get("pipeline", None)
+        variables_modelo = artefacto.get("variables_modelo", VARIABLES_MODELO_DEFAULT)
+        clases = artefacto.get("clases", [])
 
-    onehot = pipeline.named_steps["onehot"]
+        if pipeline is None:
+            raise KeyError("El artefacto no contiene la clave 'pipeline'.")
 
-    opciones = {}
-    for variable, categorias in zip(variables_modelo, onehot.categories_):
-        opciones[variable] = [str(x) for x in categorias]
+        if "opciones" in artefacto:
+            opciones = {
+                col: [str(x) for x in vals]
+                for col, vals in artefacto["opciones"].items()
+            }
+        else:
+            opciones = opciones_desde_pipeline(pipeline, variables_modelo)
+
+    else:
+        pipeline = artefacto
+        variables_modelo = VARIABLES_MODELO_DEFAULT.copy()
+        opciones = opciones_desde_pipeline(pipeline, variables_modelo)
+
+    # Asegurar que todas las variables tengan opciones
+    for col in VARIABLES_MODELO_DEFAULT:
+        if col not in opciones or len(opciones[col]) == 0:
+            opciones[col] = OPCIONES_FALLBACK[col]
 
     modelo_ok = True
 
 except Exception as e:
+    error_modelo = f"{type(e).__name__}: {repr(e)}"
     modelo_ok = False
-    st.error(f"Error al cargar el modelo: {type(e).__name__}: {repr(e)}")
 
-    # Para que la app NO quede en blanco mientras revisamos
-    variables_modelo = [
-        "Age Group", "Type of Admission", "APR DRG Code", "APR MDC Code",
-        "APR Severity of Illness Code", "APR Risk of Mortality",
-        "Payment Typology 1", "CCS_DX_Grupo", "CCS_PR_Grupo"
-    ]
 
-    opciones = {
-        "Age Group": ["0 to 17", "18 to 29", "30 to 49", "50 to 69", "70 or Older"],
-        "Type of Admission": ["Elective", "Emergency", "Newborn", "Not Available", "Trauma", "Urgent"],
-        "APR DRG Code": [],
-        "APR MDC Code": [],
-        "APR Severity of Illness Code": ["1", "2", "3", "4"],
-        "APR Risk of Mortality": ["Minor", "Moderate", "Major", "Extreme"],
-        "Payment Typology 1": [],
-        "CCS_DX_Grupo": [],
-        "CCS_PR_Grupo": []
-    }
+# ============================================================
+# SIDEBAR
+# ============================================================
 
-# ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
     <div style="padding:28px 20px 20px;">
@@ -259,7 +355,15 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 
-# ── Header ────────────────────────────────────────────────────
+# ============================================================
+# HEADER
+# ============================================================
+
+if not modelo_ok:
+    st.warning(f"El modelo no cargó correctamente. Error: {error_modelo}")
+    with st.expander("Ver detalle técnico del error"):
+        st.code(traceback.format_exc())
+
 st.markdown("""
 <div style="margin-bottom:28px;">
     <div style="font-size:10px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">
@@ -276,7 +380,38 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Formulario ────────────────────────────────────────────────
+# ============================================================
+# FUNCIONES AUXILIARES
+# ============================================================
+
+def ordenar_numerico_si_se_puede(lista):
+    try:
+        return sorted(lista, key=lambda x: int(float(x)))
+    except Exception:
+        return sorted(lista)
+
+
+def convertir_tipo_para_prediccion(valor):
+    """
+    Convierte valores numéricos que vienen como texto.
+    Si no se puede convertir, lo deja igual.
+    """
+    try:
+        if str(valor).strip().replace(".", "", 1).isdigit():
+            numero = float(valor)
+            if numero.is_integer():
+                return int(numero)
+            return numero
+    except Exception:
+        pass
+
+    return valor
+
+
+# ============================================================
+# FORMULARIO
+# ============================================================
+
 st.markdown('<div class="section-title">Datos del Paciente</div>', unsafe_allow_html=True)
 
 with st.form("formulario_prediccion"):
@@ -284,57 +419,95 @@ with st.form("formulario_prediccion"):
 
     with col1:
         st.markdown('<div class="section-title">Información General</div>', unsafe_allow_html=True)
-        age_group     = st.selectbox("Grupo de edad",
-                            sorted(opciones["Age Group"]) if modelo_ok else [])
-        tipo_admision = st.selectbox("Tipo de admisión",
-                            sorted(opciones["Type of Admission"]) if modelo_ok else [])
-        pago          = st.selectbox("Tipo de pago principal",
-                            sorted(opciones["Payment Typology 1"]) if modelo_ok else [])
+
+        age_group = st.selectbox(
+            "Grupo de edad",
+            ordenar_numerico_si_se_puede(opciones.get("Age Group", OPCIONES_FALLBACK["Age Group"]))
+        )
+
+        tipo_admision = st.selectbox(
+            "Tipo de admisión",
+            sorted(opciones.get("Type of Admission", OPCIONES_FALLBACK["Type of Admission"]))
+        )
+
+        pago = st.selectbox(
+            "Tipo de pago principal",
+            sorted(opciones.get("Payment Typology 1", OPCIONES_FALLBACK["Payment Typology 1"]))
+        )
 
     with col2:
         st.markdown('<div class="section-title">Clasificación Clínica</div>', unsafe_allow_html=True)
-        sev_raw = st.selectbox("Severidad (APR SOI)",
-                        sorted(opciones["APR Severity of Illness Code"], key=int) if modelo_ok else [])
-        mor_raw = st.selectbox("Riesgo de mortalidad (APR ROM)",
-                        opciones["APR Risk of Mortality"] if modelo_ok else [])
-        apr_mdc = st.selectbox("Categoría diagnóstica mayor (APR MDC)",
-                        opciones["APR MDC Code"] if modelo_ok else [])
-        apr_drg = st.selectbox("Grupo diagnóstico APR-DRG",
-                        opciones["APR DRG Code"] if modelo_ok else [])
+
+        sev_raw = st.selectbox(
+            "Severidad (APR SOI)",
+            ordenar_numerico_si_se_puede(opciones.get(
+                "APR Severity of Illness Code",
+                OPCIONES_FALLBACK["APR Severity of Illness Code"]
+            ))
+        )
+
+        mor_raw = st.selectbox(
+            "Riesgo de mortalidad (APR ROM)",
+            sorted(opciones.get("APR Risk of Mortality", OPCIONES_FALLBACK["APR Risk of Mortality"]))
+        )
+
+        apr_mdc = st.selectbox(
+            "Categoría diagnóstica mayor (APR MDC)",
+            ordenar_numerico_si_se_puede(opciones.get("APR MDC Code", OPCIONES_FALLBACK["APR MDC Code"]))
+        )
+
+        apr_drg = st.selectbox(
+            "Grupo diagnóstico APR-DRG",
+            ordenar_numerico_si_se_puede(opciones.get("APR DRG Code", OPCIONES_FALLBACK["APR DRG Code"]))
+        )
 
     with col3:
         st.markdown('<div class="section-title">Diagnóstico y Procedimiento</div>', unsafe_allow_html=True)
-        dx_grupo = st.selectbox("Grupo diagnóstico CCS",
-                        sorted(opciones["CCS_DX_Grupo"]) if modelo_ok else [])
-        pr_grupo = st.selectbox("Grupo procedimiento CCS",
-                        sorted(opciones["CCS_PR_Grupo"]) if modelo_ok else [])
+
+        dx_grupo = st.selectbox(
+            "Grupo diagnóstico CCS",
+            sorted(opciones.get("CCS_DX_Grupo", OPCIONES_FALLBACK["CCS_DX_Grupo"]))
+        )
+
+        pr_grupo = st.selectbox(
+            "Grupo procedimiento CCS",
+            sorted(opciones.get("CCS_PR_Grupo", OPCIONES_FALLBACK["CCS_PR_Grupo"]))
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
     submitted = st.form_submit_button("Predecir Duración de Estadía")
 
 
-# ── Resultado ─────────────────────────────────────────────────
-if submitted and modelo_ok:
+# ============================================================
+# RESULTADO
+# ============================================================
+
+if submitted:
+    if not modelo_ok:
+        st.error("No se puede predecir porque el modelo no cargó correctamente.")
+        st.stop()
+
     input_data = pd.DataFrame([{
-        "Age Group":                    age_group,
-        "Type of Admission":            tipo_admision,
-        "APR DRG Code":                 apr_drg,
-        "APR MDC Code":                 apr_mdc,
-        "APR Severity of Illness Code": sev_raw,
-        "APR Risk of Mortality":        mor_raw,
-        "Payment Typology 1":           pago,
-        "CCS_DX_Grupo":                 dx_grupo,
-        "CCS_PR_Grupo":                 pr_grupo
+        "Age Group": age_group,
+        "Type of Admission": tipo_admision,
+        "APR DRG Code": convertir_tipo_para_prediccion(apr_drg),
+        "APR MDC Code": convertir_tipo_para_prediccion(apr_mdc),
+        "APR Severity of Illness Code": convertir_tipo_para_prediccion(sev_raw),
+        "APR Risk of Mortality": mor_raw,
+        "Payment Typology 1": pago,
+        "CCS_DX_Grupo": dx_grupo,
+        "CCS_PR_Grupo": pr_grupo
     }])
 
-    for col in input_data.columns:
-        input_data[col] = input_data[col].astype("category")
+    input_data = input_data[variables_modelo]
 
     try:
         prediccion = pipeline.predict(input_data)[0]
 
-        st.markdown('<div class="section-title" style="margin-top:12px;">Resultado</div>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-title" style="margin-top:12px;">Resultado</div>',
+            unsafe_allow_html=True
+        )
 
         col_res, col_info = st.columns([1.2, 0.8], gap="large")
 
@@ -379,15 +552,31 @@ if submitted and modelo_ok:
                 </div>""", unsafe_allow_html=True)
 
         with col_info:
-            st.markdown('<div class="section-title">Resumen de entrada</div>',
-                        unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Resumen de entrada</div>', unsafe_allow_html=True)
             st.dataframe(
                 pd.DataFrame({
-                    "Variable": ["Edad", "Admisión", "Severidad", "Mortalidad",
-                                 "Diagnóstico CCS", "Procedimiento CCS",
-                                 "APR MDC", "APR DRG", "Pago"],
-                    "Valor":    [age_group, tipo_admision, sev_raw, mor_raw,
-                                 dx_grupo, pr_grupo, apr_mdc, apr_drg, pago]
+                    "Variable": [
+                        "Edad",
+                        "Admisión",
+                        "Severidad",
+                        "Mortalidad",
+                        "Diagnóstico CCS",
+                        "Procedimiento CCS",
+                        "APR MDC",
+                        "APR DRG",
+                        "Pago"
+                    ],
+                    "Valor": [
+                        age_group,
+                        tipo_admision,
+                        sev_raw,
+                        mor_raw,
+                        dx_grupo,
+                        pr_grupo,
+                        apr_mdc,
+                        apr_drg,
+                        pago
+                    ]
                 }),
                 hide_index=True,
                 use_container_width=True,
@@ -402,16 +591,15 @@ if submitted and modelo_ok:
             con un <b>F1-macro de 0.59</b> sobre datos de prueba independientes.<br><br>
             El <b>F1-macro</b> mide el balance entre precisión y recall promediado entre las tres
             categorías de estadía (Corta, Media, Larga), otorgando igual peso a cada clase.
-            Un valor de 0.59 indica capacidad de clasificación moderada — el modelo clasifica
-            correctamente aproximadamente <b>6 de cada 10 casos</b> por categoría.<br><br>
+            Un valor de 0.59 indica capacidad de clasificación moderada.<br><br>
             <b>Esta predicción es únicamente una herramienta de apoyo a la planificación
             administrativa y NO reemplaza el criterio clínico del personal médico.</b>
             Las decisiones sobre hospitalización, tratamiento y alta deben tomarse exclusivamente
             por profesionales de la salud habilitados, considerando la condición individual del
-            paciente. Los desarrolladores y la institución no asumen responsabilidad por
-            decisiones clínicas basadas en este sistema.
+            paciente.
         </div>
         """, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Error en la predicción: {e}")
+        st.error(f"Error en la predicción: {type(e).__name__}: {repr(e)}")
+        st.code(traceback.format_exc())
