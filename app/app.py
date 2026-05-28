@@ -151,10 +151,20 @@ hr { border-color: #E2E8F0 !important; margin: 20px 0 !important; }
 
 
 # ── Carga del modelo ──────────────────────────────────────────
+from pathlib import Path
+
 @st.cache_resource
 def cargar_modelo():
     from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
-    return joblib.load("models/modelo_final_pipeline.pkl")
+
+    BASE_DIR = Path(__file__).resolve().parent        # carpeta app/
+    ROOT_DIR = BASE_DIR.parent                        # carpeta del repo
+    MODEL_PATH = ROOT_DIR / "models" / "modelo_final_pipeline.pkl"
+
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"No se encontró el modelo en: {MODEL_PATH}")
+
+    return joblib.load(MODEL_PATH)
 
 try:
     artefacto = cargar_modelo()
