@@ -152,11 +152,22 @@ hr { border-color: #E2E8F0 !important; margin: 20px 0 !important; }
 
 # ── Carga del modelo ──────────────────────────────────────────
 from pathlib import Path
+import sys
+import joblib
+import streamlit as st
+
+# MUY IMPORTANTE:
+# Estas clases deben estar disponibles antes de cargar el .pkl
+from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
+
+# Esto ayuda cuando el modelo fue guardado desde notebook
+sys.modules["__main__"].LimpiezaInicial = LimpiezaInicial
+sys.modules["__main__"].ImputacionNulos = ImputacionNulos
+sys.modules["__main__"].AgrupacionCCS = AgrupacionCCS
+
 
 @st.cache_resource
 def cargar_modelo():
-    from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
-
     BASE_DIR = Path(__file__).resolve().parent
     ROOT_DIR = BASE_DIR.parent
     MODEL_PATH = ROOT_DIR / "models" / "modelo_final_pipeline.pkl"
@@ -164,36 +175,30 @@ def cargar_modelo():
     if not MODEL_PATH.exists():
         raise FileNotFoundError(f"No se encontró el modelo en: {MODEL_PATH}")
 
-    artefacto = joblib.load(MODEL_PATH)
+    return joblib.load(MODEL_PATH)
 
-    if "pipeline" not in artefacto:
-        raise KeyError("El archivo .pkl no contiene la clave 'pipeline'.")
-
-    if "opciones" not in artefacto:
-        raise KeyError("El archivo .pkl no contiene la clave 'opciones'. Debes volver a guardar el modelo incluyendo las opciones.")
-
-    return artefacto
 
 try:
     artefacto = cargar_modelo()
-    pipeline = artefacto["pipeline"]
-    opciones = artefacto["opciones"]
 
-    for col in ["APR DRG Code", "APR MDC Code"]:
-        if col in opciones:
-            try:
-                opciones[col] = sorted(opciones[col], key=lambda x: int(x))
-            except:
-                opciones[col] = sorted(opciones[col])
+    pipeline = artefacto["pipeline"]
+    variables_modelo = artefacto["variables_modelo"]
+    clases = artefacto["clases"]
+
+    # Sacar opciones directamente del OneHotEncoder entrenado
+    onehot = pipeline.named_steps["onehot"]
+
+    opciones = {
+        variable: list(categorias)
+        for variable, categorias in zip(variables_modelo, onehot.categories_)
+    }
 
     modelo_ok = True
 
 except Exception as e:
     modelo_ok = False
-    st.error(f"Error al cargar el modelo: {e}")
+    st.error(f"Error al cargar el modelo: {type(e).__name__}: {repr(e)}")
     st.stop()
-from pathlib import Path
-
 
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
