@@ -154,7 +154,7 @@ hr { border-color: #E2E8F0 !important; margin: 20px 0 !important; }
 @st.cache_resource
 def cargar_modelo():
     from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
-    return joblib.load("modelo_final_pipeline.pkl")
+    return joblib.load("models/modelo_final_pipeline.pkl")
 
 try:
     artefacto = cargar_modelo()
