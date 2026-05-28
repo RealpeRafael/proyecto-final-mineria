@@ -157,28 +157,42 @@ from pathlib import Path
 def cargar_modelo():
     from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
 
-    BASE_DIR = Path(__file__).resolve().parent        # carpeta app/
-    ROOT_DIR = BASE_DIR.parent                        # carpeta del repo
+    BASE_DIR = Path(__file__).resolve().parent
+    ROOT_DIR = BASE_DIR.parent
     MODEL_PATH = ROOT_DIR / "models" / "modelo_final_pipeline.pkl"
 
     if not MODEL_PATH.exists():
         raise FileNotFoundError(f"No se encontró el modelo en: {MODEL_PATH}")
 
-    return joblib.load(MODEL_PATH)
+    artefacto = joblib.load(MODEL_PATH)
+
+    if "pipeline" not in artefacto:
+        raise KeyError("El archivo .pkl no contiene la clave 'pipeline'.")
+
+    if "opciones" not in artefacto:
+        raise KeyError("El archivo .pkl no contiene la clave 'opciones'. Debes volver a guardar el modelo incluyendo las opciones.")
+
+    return artefacto
 
 try:
     artefacto = cargar_modelo()
-    pipeline  = artefacto["pipeline"]
-    opciones  = artefacto["opciones"]
+    pipeline = artefacto["pipeline"]
+    opciones = artefacto["opciones"]
+
     for col in ["APR DRG Code", "APR MDC Code"]:
-        try:
-            opciones[col] = sorted(opciones[col], key=lambda x: int(x))
-        except:
-            opciones[col] = sorted(opciones[col])
+        if col in opciones:
+            try:
+                opciones[col] = sorted(opciones[col], key=lambda x: int(x))
+            except:
+                opciones[col] = sorted(opciones[col])
+
     modelo_ok = True
+
 except Exception as e:
     modelo_ok = False
     st.error(f"Error al cargar el modelo: {e}")
+    st.stop()
+from pathlib import Path
 
 
 # ── Sidebar ───────────────────────────────────────────────────
