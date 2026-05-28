@@ -152,19 +152,8 @@ hr { border-color: #E2E8F0 !important; margin: 20px 0 !important; }
 
 # ── Carga del modelo ──────────────────────────────────────────
 from pathlib import Path
-import sys
 import joblib
 import streamlit as st
-
-# MUY IMPORTANTE:
-# Estas clases deben estar disponibles antes de cargar el .pkl
-from transformadores import LimpiezaInicial, ImputacionNulos, AgrupacionCCS
-
-# Esto ayuda cuando el modelo fue guardado desde notebook
-sys.modules["__main__"].LimpiezaInicial = LimpiezaInicial
-sys.modules["__main__"].ImputacionNulos = ImputacionNulos
-sys.modules["__main__"].AgrupacionCCS = AgrupacionCCS
-
 
 @st.cache_resource
 def cargar_modelo():
@@ -172,33 +161,45 @@ def cargar_modelo():
     ROOT_DIR = BASE_DIR.parent
     MODEL_PATH = ROOT_DIR / "models" / "modelo_final_pipeline.pkl"
 
-    if not MODEL_PATH.exists():
-        raise FileNotFoundError(f"No se encontró el modelo en: {MODEL_PATH}")
-
-    return joblib.load(MODEL_PATH)
-
-
-try:
+    artefacto = joblib.load(MODEL_PATH)
+    return artefacto
+    try:
     artefacto = cargar_modelo()
 
     pipeline = artefacto["pipeline"]
     variables_modelo = artefacto["variables_modelo"]
     clases = artefacto["clases"]
 
-    # Sacar opciones directamente del OneHotEncoder entrenado
     onehot = pipeline.named_steps["onehot"]
 
-    opciones = {
-        variable: list(categorias)
-        for variable, categorias in zip(variables_modelo, onehot.categories_)
-    }
+    opciones = {}
+    for variable, categorias in zip(variables_modelo, onehot.categories_):
+        opciones[variable] = [str(x) for x in categorias]
 
     modelo_ok = True
 
 except Exception as e:
     modelo_ok = False
     st.error(f"Error al cargar el modelo: {type(e).__name__}: {repr(e)}")
-    st.stop()
+
+    # Para que la app NO quede en blanco mientras revisamos
+    variables_modelo = [
+        "Age Group", "Type of Admission", "APR DRG Code", "APR MDC Code",
+        "APR Severity of Illness Code", "APR Risk of Mortality",
+        "Payment Typology 1", "CCS_DX_Grupo", "CCS_PR_Grupo"
+    ]
+
+    opciones = {
+        "Age Group": ["0 to 17", "18 to 29", "30 to 49", "50 to 69", "70 or Older"],
+        "Type of Admission": ["Elective", "Emergency", "Newborn", "Not Available", "Trauma", "Urgent"],
+        "APR DRG Code": [],
+        "APR MDC Code": [],
+        "APR Severity of Illness Code": ["1", "2", "3", "4"],
+        "APR Risk of Mortality": ["Minor", "Moderate", "Major", "Extreme"],
+        "Payment Typology 1": [],
+        "CCS_DX_Grupo": [],
+        "CCS_PR_Grupo": []
+    }
 
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
